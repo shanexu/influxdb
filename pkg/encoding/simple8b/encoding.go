@@ -20,8 +20,22 @@ package simple8b
 // │   Wasted Bits│      60   60   0   0   0   0  12   0  4  4  0  0  0  0  0  0│
 // └──────────────┴─────────────────────────────────────────────────────────────┘
 //
-// For example, when the number of values can be encoded using 4 bits, selected 5 is encoded in the
-// 4 most significant bits followed by 15 values encoded used 4 bits each in the remaining 60 bits.
+// For example:
+// - when all of the values can be encoded using 4 bits
+// - selector 5 is encoded in the 4 most significant bits
+// - followed by 15 values encoded using 4 bits each in the remaining 60 bits
+// - wasting zero bits.
+//
+// Another example:
+// - when all of the values can be encoded using 8 bits
+// - selector 9 is encoded in the 4 most significant bits
+// - followed by 7 values encoded using 8 bits each in the remaining 56 bits
+// - wasting 4 bits
+//
+// Special cases:
+// - selector 0 means "120 values, all equal to 1"
+// - selector 1 means "240 values, all equal to 1"
+
 import (
 	"encoding/binary"
 	"errors"
@@ -490,14 +504,16 @@ func DecodeBytesBigEndian(dst []uint64, src []byte) (value int, err error) {
 	for i < len(src) {
 		v := binary.BigEndian.Uint64(src[i:])
 		sel := (v >> 60) & 0xf
-		selector[sel].unpack(v, (*[240]uint64)(unsafe.Pointer(&dst[j])))
+		y := &dst[j]
+		x := (*[240]uint64)(unsafe.Pointer(y))
+		selector[sel].unpack(v, x)
 		j += selector[sel].n
 		i += 8
 	}
 	return j, nil
 }
 
-// canPack returs true if n elements from in can be stored using bits per element
+// canPack returns true if n elements from in can be stored using bits per element
 func canPack(src []uint64, n, bits int) bool {
 	if len(src) < n {
 		return false
