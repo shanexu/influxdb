@@ -286,7 +286,7 @@ func (s *Service) findTasksByUser(ctx context.Context, tx Tx, filter influxdb.Ta
 			continue
 		}
 
-		if taskFilterMatch(filter.Type, task.Type) {
+		if taskTypeFilterMatch(filter.Type, task.Type) && taskStatusFilterMatch(filter.Active, task.Status) {
 			ts = append(ts, task)
 		}
 
@@ -363,7 +363,7 @@ func (s *Service) findTasksByOrg(ctx context.Context, tx Tx, filter influxdb.Tas
 			}
 
 			if t != nil {
-				if taskFilterMatch(filter.Type, t.Type) {
+				if taskTypeFilterMatch(filter.Type, t.Type) && taskStatusFilterMatch(filter.Active, t.Status) {
 					ts = append(ts, t)
 				}
 			}
@@ -400,7 +400,7 @@ func (s *Service) findTasksByOrg(ctx context.Context, tx Tx, filter influxdb.Tas
 			break
 		}
 
-		if !taskFilterMatch(filter.Type, t.Type) {
+		if !taskTypeFilterMatch(filter.Type, t.Type) || !taskStatusFilterMatch(filter.Active, t.Status) {
 			continue
 		}
 
@@ -466,8 +466,7 @@ func (s *Service) findAllTasks(ctx context.Context, tx Tx, filter influxdb.TaskF
 		}
 
 		if t != nil {
-
-			if taskFilterMatch(filter.Type, t.Type) {
+			if taskTypeFilterMatch(filter.Type, t.Type) && taskStatusFilterMatch(filter.Active, t.Status) {
 				ts = append(ts, t)
 			}
 		}
@@ -497,7 +496,7 @@ func (s *Service) findAllTasks(ctx context.Context, tx Tx, filter influxdb.TaskF
 			t.LatestCompleted = t.CreatedAt
 		}
 
-		if !taskFilterMatch(filter.Type, t.Type) {
+		if !taskTypeFilterMatch(filter.Type, t.Type) || !taskStatusFilterMatch(filter.Active, t.Status) {
 			continue
 		}
 
@@ -1897,7 +1896,7 @@ func taskRunKey(taskID, runID influxdb.ID) ([]byte, error) {
 	return []byte(string(encodedID) + "/" + string(encodedRunID)), nil
 }
 
-func taskFilterMatch(filter *string, ttype string) bool {
+func taskTypeFilterMatch(filter *string, ttype string) bool {
 	// if they want a system task the record may be system or an empty string
 	if filter != nil {
 		// if the task is either "system" or "" it qaulifies as a system task
@@ -1909,6 +1908,16 @@ func taskFilterMatch(filter *string, ttype string) bool {
 		if *filter != ttype {
 			return false
 		}
+	}
+	return true
+}
+
+func taskStatusFilterMatch(filter *bool, taskStatus string) bool {
+	if filter != nil {
+		if *filter && taskStatus == string(backend.TaskActive) || !*filter && taskStatus == string(backend.TaskInactive) {
+			return true
+		}
+		return false
 	}
 	return true
 }
