@@ -216,6 +216,240 @@ func CreateVariable(init func(VariableFields, *testing.T) (platform.VariableServ
 				},
 			},
 		},
+		/*
+			NEW CODE
+		*/
+		{
+			name: "cant create a new variable with a name that exists",
+			fields: VariableFields{
+				IDGenerator: &mock.IDGenerator{
+					IDFn: func() platform.ID {
+						return MustIDBase16(idA)
+					},
+				},
+				TimeGenerator: fakeGenerator,
+				Variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+			args: args{
+				variable: &platform.Variable{
+					ID:             MustIDBase16(idA),
+					OrganizationID: platform.ID(3),
+					Name:           "existing-variable",
+					Selected:       []string{"a"},
+					Arguments: &platform.VariableArguments{
+						Type:   "constant",
+						Values: platform.VariableConstantValues{"a"},
+					},
+					CRUDLog: platform.CRUDLog{
+						CreatedAt: fakeDate,
+						UpdatedAt: fakeDate,
+					},
+				},
+			},
+			wants: wants{
+				err: &platform.Error{
+					Code: platform.EConflict,
+					Msg:  "variable with name existing-variable already exists",
+				},
+				variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "variable names should be unique and case-insensitive",
+			fields: VariableFields{
+				IDGenerator: &mock.IDGenerator{
+					IDFn: func() platform.ID {
+						return MustIDBase16(idA)
+					},
+				},
+				TimeGenerator: fakeGenerator,
+				Variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+			args: args{
+				variable: &platform.Variable{
+					ID:             MustIDBase16(idA),
+					OrganizationID: platform.ID(3),
+					Name:           "EXISTING-variable",
+					Selected:       []string{"a"},
+					Arguments: &platform.VariableArguments{
+						Type:   "constant",
+						Values: platform.VariableConstantValues{"a"},
+					},
+					CRUDLog: platform.CRUDLog{
+						CreatedAt: fakeDate,
+						UpdatedAt: fakeDate,
+					},
+				},
+			},
+			wants: wants{
+				err: &platform.Error{
+					Code: platform.EConflict,
+					Msg:  "variable with name EXISTING-variable already exists",
+				},
+				variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "cant create a new variable when variable name exists with a different type",
+			fields: VariableFields{
+				IDGenerator: &mock.IDGenerator{
+					IDFn: func() platform.ID {
+						return MustIDBase16(idA)
+					},
+				},
+				TimeGenerator: fakeGenerator,
+				Variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+			args: args{
+				variable: &platform.Variable{
+					ID:             MustIDBase16(idA),
+					OrganizationID: platform.ID(3),
+					Name:           "existing-variable",
+					Selected:       []string{"a"},
+					Arguments: &platform.VariableArguments{
+						Type:   "query",
+						Values: platform.VariableConstantValues{"a"},
+					},
+					CRUDLog: platform.CRUDLog{
+						CreatedAt: fakeDate,
+						UpdatedAt: fakeDate,
+					},
+				},
+			},
+			wants: wants{
+				err: &platform.Error{
+					Code: platform.EConflict,
+					Msg:  "variable with name existing-variable already exists",
+				},
+				variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "trims white space, but fails when variable name already exists",
+			fields: VariableFields{
+				IDGenerator: &mock.IDGenerator{
+					IDFn: func() platform.ID {
+						return MustIDBase16(idA)
+					},
+				},
+				TimeGenerator: fakeGenerator,
+				Variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+			args: args{
+				variable: &platform.Variable{
+					ID:             MustIDBase16(idA),
+					OrganizationID: platform.ID(3),
+					Name:           "   existing-variable   ",
+					Selected:       []string{"a"},
+					Arguments: &platform.VariableArguments{
+						Type:   "constant",
+						Values: platform.VariableConstantValues{"a"},
+					},
+					CRUDLog: platform.CRUDLog{
+						CreatedAt: fakeDate,
+						UpdatedAt: fakeDate,
+					},
+				},
+			},
+			wants: wants{
+				err: &platform.Error{
+					Code: platform.EConflict,
+					Msg:  "variable with name existing-variable already exists",
+				},
+				variables: []*platform.Variable{
+					{
+						ID:             MustIDBase16(idB),
+						OrganizationID: platform.ID(3),
+						Name:           "existing-variable",
+						Selected:       []string{"b"},
+						Arguments: &platform.VariableArguments{
+							Type:   "constant",
+							Values: platform.VariableConstantValues{"b"},
+						},
+					},
+				},
+			},
+		},
+		/*
+			END OF NEW CODE
+		*/
 	}
 
 	for _, tt := range tests {
