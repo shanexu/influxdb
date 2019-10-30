@@ -1,5 +1,8 @@
 import initialize from 'src/external/monaco'
 
+// There are a number of problems with the type definitions from the monaco package
+// TODO: type Monaco better
+
 initialize().then((monaco: any) => {
   monaco.languages.register({id: 'flux'})
 
