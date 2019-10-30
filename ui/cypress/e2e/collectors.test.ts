@@ -126,14 +126,16 @@ describe('Collectors', () => {
     describe('sorting & filtering', () => {
       const telegrafs = ['bad', 'apple', 'cookie']
       const bucketz = ['MO_buckets', 'EZ_buckets', 'Bucky']
+      const labelz = ['snail', 'newer', 'cooler']
       const [firstTelegraf, secondTelegraf, thirdTelegraf] = telegrafs
       beforeEach(() => {
         const description = 'Config Description'
         const [firstBucket, secondBucket, thirdBucket] = bucketz
+        const [firstLabelz, secondLabelz, thirdLabelz] = labelz
         cy.get('@org').then(({id}: Organization) => {
-          cy.createTelegraf(firstTelegraf, description, id, firstBucket)
-          cy.createTelegraf(secondTelegraf, description, id, secondBucket)
-          cy.createTelegraf(thirdTelegraf, description, id, thirdBucket)
+          cy.createTelegraf(firstTelegraf, description, id, firstBucket, firstLabelz)
+          cy.createTelegraf(secondTelegraf, description, id, secondBucket, secondLabelz)
+          cy.createTelegraf(thirdTelegraf, description, id, thirdBucket,thirdLabelz)
         })
         cy.reload()
       })
@@ -217,6 +219,29 @@ describe('Collectors', () => {
               expect(val.text()).to.include(telegrafs[index])
             })
           })
+      })
+
+      it.only('can sort telegraf configs by label', () => {
+        cy.getByTestID('collector-card--name').should('have.length', 3)
+
+        cy.getByTestID('search-widget').type('slow')
+
+        cy.getByTestID('resource-card').should('have.length', 3)
+        cy.getByTestID('resource-card').should('contain', firstTelegraf)
+
+        cy.getByTestID('search-widget')
+          .clear()
+          .type('snail')
+
+        cy.getByTestID('resource-card').should('have.length', 1)
+        cy.getByTestID('resource-card').should('contain', firstTelegraf)
+
+        cy.getByTestID('search-widget')
+        .clear()
+        .type('cooler')
+
+        cy.getByTestID('resource-card').should('have.length', 1)
+        cy.getByTestID('resource-card').should('contain', thirdTelegraf)
       })
     })
   })
